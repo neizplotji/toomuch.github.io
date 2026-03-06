@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bits & pieces · Had too much?</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #080810; color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+    }
+    canvas { position: fixed; inset: 0; z-index: 0; opacity: 0.3; }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 520px; margin: 0 auto;
+      padding: 40px 28px 80px;
+    }
+
+    .back {
+      color: rgba(255,255,255,0.35); text-decoration: none;
+      font-size: 13px; letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 36px; transition: color 0.2s; width: fit-content;
+    }
+    .back:hover { color: #fff; }
+
+    h1 {
+      font-size: clamp(30px, 9vw, 42px);
+      font-weight: 700; letter-spacing: -0.02em;
+      color: #B8FF5C;
+      text-decoration: underline; text-underline-offset: 6px;
+      text-decoration-thickness: 2px; margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 14px; color: rgba(255,255,255,0.38);
+      font-weight: 300; margin-bottom: 36px; line-height: 1.5;
+    }
+
+    /* ── SECTION ── */
+    .section-label {
+      font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.25);
+      margin-bottom: 12px; margin-top: 36px;
+    }
+
+    /* ── CATEGORY HEADER ── */
+    .cat-header {
+      display: flex; align-items: baseline; gap: 12px;
+      margin-bottom: 12px; margin-top: 32px;
+    }
+    .cat-title {
+      font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+    }
+    .cat-vibe {
+      font-size: 13px; color: rgba(255,255,255,0.3); font-weight: 300;
+    }
+
+    /* ── PLAYLIST CARD ── */
+    .playlist {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.07);
+      border-radius: 14px; margin-bottom: 8px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .playlist:active { background: rgba(255,255,255,0.09); }
+    .playlist:hover  { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); }
+
+    .playlist-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06);
+    }
+    .playlist-info { flex: 1; }
+    .playlist-name {
+      font-size: 15px; font-weight: 500;
+      color: rgba(255,255,255,0.88); margin-bottom: 2px;
+    }
+    .playlist-desc {
+      font-size: 12px; color: rgba(255,255,255,0.3); font-weight: 300;
+    }
+    .spotify-badge {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+      color: #1DB954; opacity: 0.7; flex-shrink: 0;
+    }
+
+    /* category accent colours */
+    .cat-uppers   .playlist-icon { background: rgba(255,195,45,0.12);  }
+    .cat-uppers   .cat-title     { color: #FFC32D; }
+    .cat-downers  .playlist-icon { background: rgba(77,217,255,0.1);   }
+    .cat-downers  .cat-title     { color: #4DD9FF; }
+    .cat-psychs   .playlist-icon { background: rgba(184,255,92,0.1);   }
+    .cat-psychs   .cat-title     { color: #B8FF5C; }
+    .cat-comedown .playlist-icon { background: rgba(255,92,138,0.1);   }
+    .cat-comedown .cat-title     { color: #FF5C8A; }
+
+    /* ── EXTERNAL LINK ── */
+    .ext-link {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 16px; margin-bottom: 10px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .ext-link:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.07); }
+    .ext-link-icon { font-size: 32px; flex-shrink: 0; }
+    .ext-link-title { font-size: 17px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .ext-link-desc  { font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 300; }
+    .ext-arrow { color: rgba(255,255,255,0.2); font-size: 18px; flex-shrink: 0; margin-left: auto; }
+
+    .footer-note {
+      margin-top: 48px; font-size: 11px;
+      color: rgba(255,255,255,0.18); text-align: center; line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="page">
+
+  <a href="index.html" class="back">← back</a>
+  <h1>Bits & pieces</h1>
+  <div class="subtitle">Music for wherever you're at. Pictures for when words don't work.</div>
+
+  <!-- ── UPPERS ── -->
+  <div class="cat-header cat-uppers">
+    <div class="cat-title">Uppers</div>
+    <div class="cat-vibe">MDMA · coke · amphetamines</div>
+  </div>
+
+  <div class="cat-uppers">
+    <a href="#" class="playlist">
+      <div class="playlist-icon">⚡</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Peak Hour</div>
+        <div class="playlist-desc">Hard techno · peak set energy</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🪩</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Euphoric House</div>
+        <div class="playlist-desc">Classic house · feel everything</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">👑</div>
+      <div class="playlist-info">
+        <div class="playlist-name">ABBA & Glam</div>
+        <div class="playlist-desc">Because everyone loves ABBA right now</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🔊</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Rave Classics</div>
+        <div class="playlist-desc">90s & 00s rave anthems</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+  </div>
+
+  <!-- ── DOWNERS ── -->
+  <div class="cat-header cat-downers">
+    <div class="cat-title">Downers</div>
+    <div class="cat-vibe">alcohol · benzos · opioids</div>
+  </div>
+
+  <div class="cat-downers">
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🌊</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Lo-fi Drift</div>
+        <div class="playlist-desc">Slow beats · no demands</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🌙</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Late Night Jazz</div>
+        <div class="playlist-desc">Warm · quiet · unhurried</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🎸</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Slow Indie</div>
+        <div class="playlist-desc">Elliott Smith · Big Thief · Phoebe Bridgers</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+  </div>
+
+  <!-- ── PSYCHEDELICS ── -->
+  <div class="cat-header cat-psychs">
+    <div class="cat-title">Psychedelics</div>
+    <div class="cat-vibe">mushrooms · LSD · mescaline</div>
+  </div>
+
+  <div class="cat-psychs">
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🌀</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Psych Rock</div>
+        <div class="playlist-desc">Pink Floyd · Tame Impala · Dead</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🌿</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Ambient Nature</div>
+        <div class="playlist-desc">No beats · just sound · great outside</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">✨</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Brian Eno / Ambient</div>
+        <div class="playlist-desc">Formless · beautiful · no anxiety</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🎺</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Jazz for Tripping</div>
+        <div class="playlist-desc">Miles Davis · Coltrane · Bitches Brew era</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+  </div>
+
+  <!-- ── COMEDOWN ── -->
+  <div class="cat-header cat-comedown">
+    <div class="cat-title">Comedown</div>
+    <div class="cat-vibe">when you need to land softly</div>
+  </div>
+
+  <div class="cat-comedown">
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🛋</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Comedown Cloud</div>
+        <div class="playlist-desc">Soft electronic · no harsh edges</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">☀️</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Morning After</div>
+        <div class="playlist-desc">Gentle · optimistic · you made it</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+    <a href="#" class="playlist">
+      <div class="playlist-icon">🫂</div>
+      <div class="playlist-info">
+        <div class="playlist-name">Feel Better Soon</div>
+        <div class="playlist-desc">Cozy & warm · Mac DeMarco vibes</div>
+      </div>
+      <div class="spotify-badge">▶ Spotify</div>
+    </a>
+  </div>
+
+  <!-- ── PICTURES ── -->
+  <div class="section-label" style="margin-top:44px;">Something to look at</div>
+
+  <a href="#" class="ext-link">
+    <div class="ext-link-icon">🖼</div>
+    <div>
+      <div class="ext-link-title">Calming & beautiful things</div>
+      <div class="ext-link-desc">A curated collection — nature, colour, space, art</div>
+    </div>
+    <div class="ext-arrow">→</div>
+  </a>
+
+  <a href="#" class="ext-link">
+    <div class="ext-link-icon">🌌</div>
+    <div>
+      <div class="ext-link-title">NASA image gallery</div>
+      <div class="ext-link-desc">Space is very large and that's comforting</div>
+    </div>
+    <div class="ext-arrow">→</div>
+  </a>
+
+  <div class="footer-note">
+    Spotify links open in the app if installed
+  </div>
+
+</div>
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W, H, pts = [];
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  pts = [];
+  for (let i = 0; i < Math.floor(W*H/14000); i++)
+    pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.1+.3});
+}
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  for (const p of pts){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;}
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<110){ctx.strokeStyle=`rgba(180,200,255,${(1-d/110)*.25})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.stroke();}
+  }
+  for(const p of pts){ctx.fillStyle='rgba(200,215,255,0.55)';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}
+  requestAnimationFrame(draw);
+}
+window.addEventListener('resize',resize);
+resize();draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Am I safe? · Had too much?</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #080810;
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    canvas {
+      position: fixed; inset: 0; z-index: 0; opacity: 0.35;
+    }
+    .page {
+      position: relative; z-index: 1;
+      max-width: 520px; margin: 0 auto;
+      padding: 40px 28px 80px;
+    }
+    .back {
+      color: rgba(255,255,255,0.35); text-decoration: none;
+      font-size: 13px; letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 36px; transition: color 0.2s; width: fit-content;
+    }
+    .back:hover { color: #fff; }
+
+    /* ── SECTION HEADERS ── */
+    .section-title {
+      font-size: clamp(28px, 8vw, 38px);
+      font-weight: 700; letter-spacing: -0.02em;
+      text-decoration: underline; text-underline-offset: 6px;
+      text-decoration-thickness: 2px; margin-bottom: 8px;
+    }
+    .section-sub {
+      font-size: 13px; color: rgba(255,255,255,0.38);
+      font-weight: 300; margin-bottom: 28px; line-height: 1.5;
+    }
+
+    /* ── SECTION DIVIDER ── */
+    .section-break {
+      margin: 52px 0 44px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .section-break-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(to right, rgba(255,255,255,0.08), transparent);
+    }
+    .section-break-note {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.2); white-space: nowrap;
+    }
+
+    /* ── SELECTORS ── */
+    .selectors { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .selector-label {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.35); margin-bottom: 6px;
+    }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾'; position: absolute; right: 16px; top: 50%;
+      transform: translateY(-50%); color: rgba(255,255,255,0.3);
+      pointer-events: none; font-size: 14px;
+    }
+    select {
+      width: 100%; background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.1); border-radius: 12px;
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 500;
+      padding: 13px 44px 13px 16px; appearance: none; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s; letter-spacing: -0.01em;
+    }
+    select:focus { outline: none; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+    select option { background: #14141f; color: #fff; font-size: 15px; }
+    select option:disabled { color: rgba(255,255,255,0.3); }
+
+    .plus-row { text-align: center; font-size: 20px; color: rgba(255,255,255,0.15); padding: 2px 0; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent);
+      margin: 4px 0 24px;
+    }
+
+    /* ── PROMPT ── */
+    .prompt {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center;
+      padding: 32px 0; color: rgba(255,255,255,0.18);
+      font-size: 14px; font-weight: 300; gap: 12px; line-height: 1.6;
+    }
+    .prompt-icon { font-size: 28px; }
+
+    /* ── COMBO RESULT ── */
+    .result {
+      display: none; flex-direction: column;
+      align-items: flex-start; padding: 16px 0 8px;
+      opacity: 0; transition: opacity 0.35s ease;
+    }
+    .result.visible { display: flex; opacity: 1; }
+
+    .result-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      font-weight: 600; padding: 6px 14px; border-radius: 20px; margin-bottom: 14px;
+    }
+    .result-pair {
+      font-size: 13px; color: rgba(255,255,255,0.3);
+      font-weight: 300; margin-bottom: 4px;
+    }
+    .result-verdict {
+      font-size: clamp(22px, 6vw, 30px); font-weight: 700;
+      letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 18px;
+    }
+
+    /* ── EFFECT TAGS ── */
+    .effect-tags {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .tag {
+      font-size: 13px; font-weight: 500; letter-spacing: 0.01em;
+      padding: 6px 13px; border-radius: 20px;
+      border: 1.5px solid; white-space: nowrap;
+    }
+
+    /* tag colours inherit from status */
+    .tags-safe     .tag { color: #50BE5A; border-color: rgba(80,190,90,0.35);  background: rgba(80,190,90,0.08); }
+    .tags-caution  .tag { color: #FFC32D; border-color: rgba(255,195,45,0.35); background: rgba(255,195,45,0.08); }
+    .tags-unsafe   .tag { color: #FF7828; border-color: rgba(255,120,40,0.35); background: rgba(255,120,40,0.08); }
+    .tags-danger   .tag { color: #D73232; border-color: rgba(215,50,50,0.35);  background: rgba(215,50,50,0.08); }
+    .tags-unknown  .tag { color: #8282A0; border-color: rgba(130,130,160,0.35);background: rgba(130,130,160,0.08); }
+
+    /* status badge colours */
+    .status-safe    { background: rgba(80,190,90,0.15);   color: #50BE5A; border: 1px solid rgba(80,190,90,0.3); }
+    .status-caution { background: rgba(255,195,45,0.15);  color: #FFC32D; border: 1px solid rgba(255,195,45,0.3); }
+    .status-unsafe  { background: rgba(255,120,40,0.15);  color: #FF7828; border: 1px solid rgba(255,120,40,0.3); }
+    .status-danger  { background: rgba(215,50,50,0.15);   color: #D73232; border: 1px solid rgba(215,50,50,0.3); }
+    .status-unknown { background: rgba(130,130,160,0.15); color: #8282A0; border: 1px solid rgba(130,130,160,0.3); }
+
+    .verdict-safe    { color: #50BE5A; }
+    .verdict-caution { color: #FFC32D; }
+    .verdict-unsafe  { color: #FF7828; }
+    .verdict-danger  { color: #D73232; }
+    .verdict-unknown { color: rgba(255,255,255,0.45); }
+
+    /* ── DOSE CALCULATOR ── */
+    .calc-title { color: #FF5C8A; }
+
+    .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .input-row > * { flex: 1; }
+
+    .input-group { display: flex; flex-direction: column; margin-bottom: 10px; }
+
+    input[type="number"] {
+      width: 100%; background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.1); border-radius: 12px;
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 500;
+      padding: 16px 18px; transition: border-color 0.2s;
+    }
+    input[type="number"]:focus { outline: none; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+    input[type="number"]::placeholder { color: rgba(255,255,255,0.25); }
+
+    /* sex toggle */
+    .toggle-row { display: flex; gap: 8px; }
+    .toggle-btn {
+      flex: 1; padding: 14px 10px;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 12px; color: rgba(255,255,255,0.4);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .toggle-btn.active {
+      background: rgba(255,92,138,0.15);
+      border-color: rgba(255,92,138,0.5);
+      color: #FF5C8A;
+    }
+
+    /* unit toggle */
+    .unit-row { display: flex; gap: 0; margin-bottom: 10px; }
+    .unit-btn {
+      flex: 1; padding: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.35);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .unit-btn:first-child { border-radius: 8px 0 0 8px; }
+    .unit-btn:last-child  { border-radius: 0 8px 8px 0; }
+    .unit-btn.active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); color: #fff; }
+
+    /* dose result */
+    .dose-result {
+      margin-top: 24px; padding: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      display: none;
+    }
+    .dose-result.visible { display: block; }
+    .dose-result-label {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); margin-bottom: 14px;
+    }
+    .dose-tiers { display: flex; flex-direction: column; gap: 10px; }
+    .dose-tier {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-radius: 10px;
+    }
+    .dose-tier-name { font-size: 13px; font-weight: 500; }
+    .dose-tier-amount { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+
+    .tier-threshold { background: rgba(80,190,90,0.1);  }
+    .tier-threshold .dose-tier-name   { color: rgba(80,190,90,0.7); }
+    .tier-threshold .dose-tier-amount { color: #50BE5A; }
+
+    .tier-light { background: rgba(80,190,90,0.08); }
+    .tier-light .dose-tier-name   { color: rgba(80,190,90,0.6); }
+    .tier-light .dose-tier-amount { color: #50BE5A; }
+
+    .tier-common { background: rgba(255,195,45,0.08); }
+    .tier-common .dose-tier-name   { color: rgba(255,195,45,0.7); }
+    .tier-common .dose-tier-amount { color: #FFC32D; }
+
+    .tier-strong { background: rgba(255,120,40,0.08); }
+    .tier-strong .dose-tier-name   { color: rgba(255,120,40,0.7); }
+    .tier-strong .dose-tier-amount { color: #FF7828; }
+
+    .tier-heavy { background: rgba(215,50,50,0.08); }
+    .tier-heavy .dose-tier-name   { color: rgba(215,50,50,0.7); }
+    .tier-heavy .dose-tier-amount { color: #D73232; }
+
+    .dose-note {
+      margin-top: 14px; font-size: 12px;
+      color: rgba(255,255,255,0.28); line-height: 1.6;
+    }
+
+    /* ── FOOTER ── */
+    .footer-note {
+      margin-top: 48px; font-size: 11px;
+      color: rgba(255,255,255,0.18); line-height: 1.7; text-align: center;
+    }
+    .footer-note a { color: rgba(255,255,255,0.32); }
+  </style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="page">
+
+  <a href="index.html" class="back">← back</a>
+
+  <!-- ════════════════════════════════════
+       SECTION 1: COMBO CHECKER
+  ════════════════════════════════════ -->
+  <div class="section-title" style="color:#FFE44D;">Am I safe?</div>
+  <div class="section-sub">Check how two substances interact. Select both to see the risk level.</div>
+
+  <div class="selectors">
+    <div>
+      <div class="selector-label">First substance</div>
+      <div class="select-wrap">
+        <select id="sub1" onchange="checkCombo()">
+          <option value="" disabled selected>Select a substance…</option>
+        </select>
+      </div>
+    </div>
+    <div class="plus-row">+</div>
+    <div>
+      <div class="selector-label">Second substance</div>
+      <div class="select-wrap">
+        <select id="sub2" onchange="checkCombo()">
+          <option value="" disabled selected>Select a substance…</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div id="combo-prompt" class="prompt">
+    <div class="prompt-icon">⚗️</div>
+    <div>Choose both substances above<br>to see their interaction</div>
+  </div>
+
+  <div id="combo-result" class="result">
+    <div id="badge" class="result-badge"></div>
+    <div id="pair" class="result-pair"></div>
+    <div id="verdict" class="result-verdict"></div>
+    <div id="effect-tags" class="effect-tags"></div>
+  </div>
+
+  <!-- SECTION BREAK -->
+  <div style="margin: 48px 0 36px; text-align:center;">
+    <div style="height:1px; background:rgba(255,255,255,0.07); margin-bottom:24px;"></div>
+    <div style="display:inline-block; background:rgba(255,92,138,0.12); border:1.5px solid rgba(255,92,138,0.3); border-radius:20px; padding:10px 20px;">
+      <span style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:#FF5C8A; font-weight:600;">↓ Separate tool below</span>
+    </div>
+    <div style="height:1px; background:rgba(255,255,255,0.07); margin-top:24px;"></div>
+  </div>
+
+  <!-- SECTION 2: DOSE CALCULATOR -->
+  <div class="section-title calc-title">Dose reference</div>
+  <div class="section-sub">Rough safe ranges by body weight. One substance only.</div>
+
+  <div class="input-group">
+    <div class="selector-label">Substance</div>
+    <div class="select-wrap">
+      <select id="dose-sub" onchange="calcDose()">
+        <option value="" disabled selected>Select a substance…</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <div class="selector-label">Body weight</div>
+    <div class="unit-row">
+      <button class="unit-btn active" id="btn-kg" onclick="setUnit('kg')">kg</button>
+      <button class="unit-btn" id="btn-lbs" onclick="setUnit('lbs')">lbs</button>
+    </div>
+    <input type="number" id="weight-input" placeholder="e.g. 70" min="30" max="300" oninput="calcDose()" />
+  </div>
+
+  <div class="input-group">
+    <div class="selector-label">Biological sex <span style="font-size:10px;color:rgba(255,255,255,0.2);text-transform:none;letter-spacing:0">(affects metabolism)</span></div>
+    <div class="toggle-row">
+      <button class="toggle-btn active" id="btn-male" onclick="setSex('male')">Male</button>
+      <button class="toggle-btn" id="btn-female" onclick="setSex('female')">Female</button>
+    </div>
+  </div>
+
+  <div id="dose-result" class="dose-result">
+    <div class="dose-result-label">Estimated dose ranges</div>
+    <div id="dose-tiers" class="dose-tiers"></div>
+    <div id="dose-note" class="dose-note"></div>
+  </div>
+
+  <div class="footer-note">
+    Combo data: <a href="https://tripsit.me" target="_blank">TripSit</a> &amp; <a href="https://knowyourstuff.nz" target="_blank">KnowYourStuff NZ</a><br>
+    For harm reduction only · Not medical advice<br>
+    BC Crisis Line: <strong>1-800-784-2433</strong> · Emergency: <strong>911</strong>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// SHARED SUBSTANCE LIST
+// ─────────────────────────────────────────────
+const substances = [
+  { label:"Alcohol",                key:"alcohol" },
+  { label:"Amphetamines",           key:"amphetamines" },
+  { label:"Benzodiazepines",        key:"benzodiazepines" },
+  { label:"Cannabis",               key:"cannabis" },
+  { label:"Cathinones (bath salts)",key:"cathinones" },
+  { label:"Cocaine",                key:"cocaine" },
+  { label:"Caffeine",               key:"caffeine" },
+  { label:"DXM",                    key:"dxm" },
+  { label:"GHB / GBL",              key:"ghb" },
+  { label:"Ketamine",               key:"ketamine" },
+  { label:"LSD",                    key:"lsd" },
+  { label:"MDMA",                   key:"mdma" },
+  { label:"Mescaline",              key:"mescaline" },
+  { label:"Methamphetamine",        key:"methamphetamine" },
+  { label:"Mushrooms (psilocybin)", key:"mushrooms" },
+  { label:"Nitrous Oxide",          key:"nitrous" },
+  { label:"Opioids",                key:"opioids" },
+  { label:"SSRIs",                  key:"ssris" },
+  { label:"Tramadol",               key:"tramadol" },
+  { label:"MAOIs",                  key:"maois" },
+  { label:"2C-x",                   key:"2cx" },
+  { label:"NBOMes",                 key:"nbomes" },
+];
+
+// ─────────────────────────────────────────────
+// COMBO DATA
+// ─────────────────────────────────────────────
+const combos = {
+  "alcohol|cannabis":        { status:"caution",  verdict:"Use caution",        tags:["Nausea","Dizziness","Greening out"] },
+  "alcohol|cathinones":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Heart strain","Masks intoxication"] },
+  "alcohol|cocaine":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Toxic to liver","Heart strain","Alcohol poisoning risk"] },
+  "alcohol|ghb":             { status:"danger",   verdict:"Dangerous — avoid",  tags:["Breathing slows","Blackout","Death risk"] },
+  "alcohol|ketamine":        { status:"unsafe",   verdict:"Unsafe combination", tags:["Blackout","Vomiting","Can't breathe safely"] },
+  "alcohol|maois":           { status:"danger",   verdict:"Dangerous — avoid",  tags:["Blood pressure spike","Potentially fatal"] },
+  "alcohol|mdma":            { status:"unsafe",   verdict:"Unsafe combination", tags:["Dehydration","Heart strain","Heatstroke"] },
+  "alcohol|amphetamines":    { status:"unsafe",   verdict:"Unsafe combination", tags:["Masks intoxication","Alcohol poisoning risk"] },
+  "alcohol|methamphetamine": { status:"unsafe",   verdict:"Unsafe combination", tags:["Masks intoxication","Dehydration","Heart strain"] },
+  "alcohol|opioids":         { status:"danger",   verdict:"Dangerous — avoid",  tags:["Breathing stops","#1 overdose cause"] },
+  "alcohol|benzodiazepines": { status:"danger",   verdict:"Dangerous — avoid",  tags:["Breathing stops","Unconsciousness","Fatal"] },
+  "alcohol|tramadol":        { status:"danger",   verdict:"Dangerous — avoid",  tags:["Seizures","Breathing slows"] },
+  "alcohol|dxm":             { status:"unsafe",   verdict:"Unsafe combination", tags:["Disorientation","Vomiting","Blackout"] },
+  "alcohol|ssris":           { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Impaired coordination"] },
+  "alcohol|nitrous":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Dizziness","Fall risk","Nausea"] },
+  "alcohol|caffeine":        { status:"caution",  verdict:"Use caution",        tags:["Masks intoxication","Easy to over-drink"] },
+  "cannabis|mdma":           { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Paranoia","Overwhelming comedown"] },
+  "lsd|mdma":                { status:"caution",  verdict:"Use caution",        tags:["Very intense","Overheating","Heart strain"] },
+  "mdma|mushrooms":          { status:"caution",  verdict:"Use caution",        tags:["Very intense","Overheating","Anxiety"] },
+  "cocaine|mdma":            { status:"unsafe",   verdict:"Unsafe combination", tags:["Heart strain","Redosing risk","Neurotoxicity"] },
+  "amphetamines|mdma":       { status:"unsafe",   verdict:"Unsafe combination", tags:["Overheating","Heart strain","Neurotoxicity"] },
+  "maois|mdma":              { status:"danger",   verdict:"Dangerous — avoid",  tags:["Serotonin syndrome","Potentially fatal"] },
+  "mdma|ssris":              { status:"caution",  verdict:"Use caution",        tags:["Blunted effects","Dangerous redosing risk"] },
+  "mdma|tramadol":           { status:"danger",   verdict:"Dangerous — avoid",  tags:["Serotonin syndrome","Life-threatening"] },
+  "ghb|mdma":                { status:"unsafe",   verdict:"Unsafe combination", tags:["Sudden blackout","Overdose hard to recognise"] },
+  "cathinones|mdma":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Heart strain","Overheating","Psychosis risk"] },
+  "benzodiazepines|opioids": { status:"danger",   verdict:"Dangerous — avoid",  tags:["Breathing stops","#1 overdose cause"] },
+  "ghb|opioids":             { status:"danger",   verdict:"Dangerous — avoid",  tags:["Breathing stops","Extreme overdose risk"] },
+  "ketamine|opioids":        { status:"unsafe",   verdict:"Unsafe combination", tags:["Sedation","Breathing slows","Don't use alone"] },
+  "mdma|opioids":            { status:"unsafe",   verdict:"Unsafe combination", tags:["Masks opioid dose","Dangerous redosing"] },
+  "maois|opioids":           { status:"danger",   verdict:"Dangerous — avoid",  tags:["Serotonin syndrome","Breathing stops","Fatal"] },
+  "methamphetamine|opioids": { status:"unsafe",   verdict:"Unsafe combination", tags:["Masks dose","Overdose when stimulant wears off"] },
+  "nitrous|opioids":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Breathing slows","Low oxygen"] },
+  "opioids|tramadol":        { status:"danger",   verdict:"Dangerous — avoid",  tags:["Double opioid load","Seizures","Breathing stops"] },
+  "amphetamines|cocaine":    { status:"unsafe",   verdict:"Unsafe combination", tags:["Heart strain","High blood pressure","Cardiac risk"] },
+  "amphetamines|maois":      { status:"danger",   verdict:"Dangerous — avoid",  tags:["Blood pressure crisis","Potentially fatal"] },
+  "amphetamines|methamphetamine":{ status:"unsafe",verdict:"Unsafe combination",tags:["Heart strain","Overheating","Psychosis"] },
+  "caffeine|maois":          { status:"unsafe",   verdict:"Unsafe combination", tags:["Rapid heart rate","Anxiety","Cardiovascular risk"] },
+  "caffeine|mdma":           { status:"caution",  verdict:"Use caution",        tags:["Heart rate up","Worsens dehydration"] },
+  "cathinones|cocaine":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Heart strain","Unpredictable effects"] },
+  "cathinones|amphetamines": { status:"unsafe",   verdict:"Unsafe combination", tags:["Double stimulant","Heart strain"] },
+  "cocaine|maois":           { status:"danger",   verdict:"Dangerous — avoid",  tags:["Blood pressure crisis","Stroke","Fatal"] },
+  "methamphetamine|maois":   { status:"danger",   verdict:"Dangerous — avoid",  tags:["Blood pressure crisis","Potentially fatal"] },
+  "benzodiazepines|ghb":     { status:"danger",   verdict:"Dangerous — avoid",  tags:["Breathing stops","Very narrow safe window"] },
+  "ghb|ketamine":            { status:"unsafe",   verdict:"Unsafe combination", tags:["Blackout","Can't assess own state"] },
+  "cannabis|lsd":            { status:"caution",  verdict:"Use caution",        tags:["Intensifies trip","Anxiety","Paranoia"] },
+  "cannabis|mushrooms":      { status:"caution",  verdict:"Use caution",        tags:["Intensifies experience","Can become overwhelming"] },
+  "cannabis|ketamine":       { status:"caution",  verdict:"Use caution",        tags:["Disorientation","Anxiety","Cognitive impairment"] },
+  "benzodiazepines|lsd":     { status:"safe",     verdict:"Generally safer",    tags:["Reduces trip intensity","Emergency off-switch"] },
+  "benzodiazepines|mushrooms":{ status:"safe",    verdict:"Generally safer",    tags:["Reduces trip intensity","Emergency off-switch"] },
+  "lsd|mushrooms":           { status:"caution",  verdict:"Use caution",        tags:["Effects multiply","Very long duration","Intense"] },
+  "amphetamines|lsd":        { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Heart rate up","Harder to manage"] },
+  "lsd|maois":               { status:"caution",  verdict:"Use caution",        tags:["Much stronger trip","Reduce dose significantly"] },
+  "cocaine|lsd":             { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Heart strain","Rough comedown"] },
+  "2cx|cannabis":            { status:"caution",  verdict:"Use caution",        tags:["Intensifies visuals","Anxiety","Overwhelming"] },
+  "nbomes|cannabis":         { status:"caution",  verdict:"Use caution",        tags:["Narrow safe window","Can tip into danger"] },
+  "nbomes|amphetamines":     { status:"unsafe",   verdict:"Unsafe combination", tags:["Vasoconstriction","Heart strain","Cardiovascular risk"] },
+  "benzodiazepines|ketamine":{ status:"caution",  verdict:"Use caution",        tags:["Sedation","Loss of motor control"] },
+  "dxm|ketamine":            { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Injury risk","Disorientation"] },
+  "dxm|maois":               { status:"danger",   verdict:"Dangerous — avoid",  tags:["Serotonin syndrome","Potentially fatal"] },
+  "dxm|mdma":                { status:"danger",   verdict:"Dangerous — avoid",  tags:["Serotonin syndrome","Life-threatening"] },
+  "dxm|opioids":             { status:"unsafe",   verdict:"Unsafe combination", tags:["Breathing slows","Serotonin risk"] },
+  "dxm|alcohol":             { status:"unsafe",   verdict:"Unsafe combination", tags:["Disorientation","Vomiting","Blackout"] },
+  "maois|ssris":             { status:"danger",   verdict:"Dangerous — avoid",  tags:["Serotonin syndrome","Life-threatening","Never combine"] },
+  "ssris|tramadol":          { status:"danger",   verdict:"Dangerous — avoid",  tags:["Serotonin syndrome","Dangerous even at normal doses"] },
+  "benzodiazepines|tramadol":{ status:"unsafe",   verdict:"Unsafe combination", tags:["Sedation","Breathing slows at higher doses"] },
+
+  // ALCOHOL + PSYCHEDELICS/OTHERS
+  "alcohol|lsd":              { status:"caution",  verdict:"Use caution",        tags:["Nausea","Anxiety","Unpredictable trip"] },
+  "alcohol|mescaline":        { status:"unsafe",   verdict:"Unsafe combination", tags:["Nausea","Vomiting","Cardiovascular strain"] },
+  "alcohol|mushrooms":        { status:"caution",  verdict:"Use caution",        tags:["Nausea","Disorientation","Unpredictable intensity"] },
+  "2cx|alcohol":              { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Nausea","Unpredictable"] },
+  "alcohol|nbomes":           { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Narrow safe window"] },
+
+  // AMPHETAMINES
+  "amphetamines|benzodiazepines":{ status:"caution", verdict:"Use caution",      tags:["Competing effects","Masks sedation","Unpredictable"] },
+  "amphetamines|cannabis":    { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Paranoia","Heart rate up"] },
+  "amphetamines|caffeine":    { status:"caution",  verdict:"Use caution",        tags:["Heart rate up","Blood pressure up","Anxiety"] },
+  "amphetamines|dxm":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Cardiovascular strain"] },
+  "amphetamines|ghb":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Competing effects","Cardiovascular strain","Unpredictable"] },
+  "amphetamines|ketamine":    { status:"caution",  verdict:"Use caution",        tags:["Competing effects","Cardiovascular strain"] },
+  "amphetamines|mescaline":   { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Anxiety","Overheating"] },
+  "amphetamines|mushrooms":   { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Heart rate up","Difficult experience"] },
+  "amphetamines|nitrous":     { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Dizziness"] },
+  "amphetamines|opioids":     { status:"unsafe",   verdict:"Unsafe combination", tags:["Masks opioid dose","Overdose when stimulant wears off"] },
+  "amphetamines|ssris":       { status:"caution",  verdict:"Use caution",        tags:["Serotonin risk","Cardiovascular strain"] },
+  "amphetamines|tramadol":    { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Seizure risk","Cardiovascular strain"] },
+  "2cx|amphetamines":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Anxiety","Overheating"] },
+
+  // BENZODIAZEPINES
+  "benzodiazepines|cannabis": { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Memory impairment","Drowsiness"] },
+  "benzodiazepines|cathinones":{ status:"caution", verdict:"Use caution",        tags:["Competing effects","Cardiovascular strain","Unpredictable"] },
+  "benzodiazepines|cocaine":  { status:"caution",  verdict:"Use caution",        tags:["Competing effects","Masks cocaine crash","Redosing risk"] },
+  "benzodiazepines|caffeine": { status:"caution",  verdict:"Use caution",        tags:["Competing effects","Reduced effect of both"] },
+  "benzodiazepines|dxm":      { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Respiratory risk at high doses"] },
+  "benzodiazepines|mdma":     { status:"caution",  verdict:"Use caution",        tags:["Reduces MDMA effects","May cause redosing"] },
+  "benzodiazepines|mescaline":{ status:"safe",     verdict:"Generally safer",    tags:["Reduces trip intensity","Emergency off-switch"] },
+  "benzodiazepines|methamphetamine":{ status:"caution", verdict:"Use caution",   tags:["Competing effects","Masks stimulant crash"] },
+  "benzodiazepines|nitrous":  { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Dizziness"] },
+  "benzodiazepines|ssris":    { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Check with prescriber"] },
+  "benzodiazepines|maois":    { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Check with prescriber"] },
+  "2cx|benzodiazepines":      { status:"safe",     verdict:"Generally safer",    tags:["Reduces trip intensity","Emergency off-switch"] },
+  "benzodiazepines|nbomes":   { status:"safe",     verdict:"Generally safer",    tags:["Reduces trip intensity","Emergency off-switch"] },
+
+  // CANNABIS
+  "cannabis|cathinones":      { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Paranoia","Cardiovascular strain"] },
+  "cannabis|cocaine":         { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Heart rate up","Competing effects"] },
+  "caffeine|cannabis":        { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Heart rate up"] },
+  "cannabis|dxm":             { status:"caution",  verdict:"Use caution",        tags:["Increased dissociation","Anxiety","Disorientation"] },
+  "cannabis|ghb":             { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Dizziness","Nausea"] },
+  "cannabis|mescaline":       { status:"caution",  verdict:"Use caution",        tags:["Intensifies trip","Anxiety","Paranoia"] },
+  "cannabis|methamphetamine": { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Paranoia","Heart rate up"] },
+  "cannabis|nitrous":         { status:"caution",  verdict:"Use caution",        tags:["Disorientation","Dizziness","Anxiety"] },
+  "cannabis|opioids":         { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Respiratory caution"] },
+  "cannabis|ssris":           { status:"caution",  verdict:"Use caution",        tags:["Variable interaction","Anxiety possible"] },
+  "cannabis|tramadol":        { status:"caution",  verdict:"Use caution",        tags:["Sedation","Serotonin caution"] },
+  "cannabis|maois":           { status:"caution",  verdict:"Use caution",        tags:["Potentiates cannabis","Anxiety","Increased effects"] },
+  "cannabis|nbomes":          { status:"caution",  verdict:"Use caution",        tags:["Potentiates NBOMes","Narrow safe window"] },
+
+  // CAFFEINE
+  "caffeine|cathinones":      { status:"caution",  verdict:"Use caution",        tags:["Heart rate up","Blood pressure up","Anxiety"] },
+  "caffeine|cocaine":         { status:"caution",  verdict:"Use caution",        tags:["Heart rate up","Blood pressure up","Anxiety"] },
+  "caffeine|dxm":             { status:"caution",  verdict:"Use caution",        tags:["Stimulant + dissociative","Disorientation"] },
+  "caffeine|ghb":             { status:"caution",  verdict:"Use caution",        tags:["Competing effects","Cardiovascular strain","Unpredictable"] },
+  "caffeine|ketamine":        { status:"caution",  verdict:"Use caution",        tags:["Competing effects","Cardiovascular strain"] },
+  "caffeine|lsd":             { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Overstimulation","Uncomfortable trip"] },
+  "caffeine|mescaline":       { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Overstimulation","Cardiovascular strain"] },
+  "caffeine|methamphetamine": { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Heart rate up","Blood pressure up"] },
+  "caffeine|mushrooms":       { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Overstimulation","Uncomfortable trip"] },
+  "caffeine|nitrous":         { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Dizziness"] },
+  "caffeine|opioids":         { status:"caution",  verdict:"Use caution",        tags:["Competing effects","Cardiovascular caution"] },
+  "caffeine|ssris":           { status:"caution",  verdict:"Use caution",        tags:["Variable interaction","Increased anxiety possible"] },
+  "caffeine|tramadol":        { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Anxiety"] },
+  "2cx|caffeine":             { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Overstimulation","Cardiovascular strain"] },
+  "caffeine|nbomes":          { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Overstimulation","Cardiovascular strain"] },
+
+  // CATHINONES
+  "cathinones|dxm":           { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Cardiovascular strain"] },
+  "cathinones|ghb":           { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Unpredictable","Competing effects"] },
+  "cathinones|ketamine":      { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Competing effects"] },
+  "cathinones|lsd":           { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Cardiovascular strain","Unpredictable trip"] },
+  "cathinones|mescaline":     { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Overheating","Anxiety"] },
+  "cathinones|methamphetamine":{ status:"unsafe",  verdict:"Unsafe combination", tags:["Double stimulant","Cardiovascular strain","Psychosis risk"] },
+  "cathinones|mushrooms":     { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Cardiovascular strain","Unpredictable"] },
+  "cathinones|nitrous":       { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Dizziness"] },
+  "cathinones|opioids":       { status:"unsafe",   verdict:"Unsafe combination", tags:["Masks opioid dose","Overdose risk"] },
+  "cathinones|ssris":         { status:"caution",  verdict:"Use caution",        tags:["Serotonin risk","Cardiovascular strain"] },
+  "cathinones|tramadol":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Seizure risk"] },
+  "cathinones|maois":         { status:"danger",   verdict:"Dangerous - avoid",  tags:["Blood pressure crisis","Serotonin syndrome","Fatal"] },
+  "2cx|cathinones":           { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Overheating","Unpredictable"] },
+  "cathinones|nbomes":        { status:"unsafe",   verdict:"Unsafe combination", tags:["Double stimulant","Cardiovascular strain","Cardiac risk"] },
+
+  // COCAINE
+  "cocaine|dxm":              { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Serotonin risk"] },
+  "cocaine|ghb":              { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Competing effects","Unpredictable"] },
+  "cocaine|ketamine":         { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Competing effects"] },
+  "cocaine|mescaline":        { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Overheating","Anxiety"] },
+  "cocaine|methamphetamine":  { status:"unsafe",   verdict:"Unsafe combination", tags:["Double stimulant","Cardiovascular strain","Cardiac risk"] },
+  "cocaine|mushrooms":        { status:"caution",  verdict:"Use caution",        tags:["Anxiety","Heart rate up","Difficult experience"] },
+  "cocaine|nitrous":          { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Dizziness"] },
+  "cocaine|opioids":          { status:"unsafe",   verdict:"Unsafe combination", tags:["Masks opioid dose","Overdose when stimulant wears off"] },
+  "cocaine|ssris":            { status:"caution",  verdict:"Use caution",        tags:["Serotonin risk","Cardiovascular strain"] },
+  "cocaine|tramadol":         { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Cardiovascular strain","Seizure risk"] },
+  "2cx|cocaine":              { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Overheating","Anxiety"] },
+  "cocaine|nbomes":           { status:"danger",   verdict:"Dangerous - avoid",  tags:["Severe vasoconstriction","Heart failure risk","Cardiac risk"] },
+
+  // DXM
+  "dxm|ghb":                  { status:"unsafe",   verdict:"Unsafe combination", tags:["CNS depression","Blackout","Respiratory risk"] },
+  "dxm|lsd":                  { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Unpredictable","Disorientation"] },
+  "dxm|mescaline":            { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Unpredictable","Disorientation"] },
+  "dxm|methamphetamine":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Cardiovascular strain"] },
+  "dxm|mushrooms":            { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Unpredictable","Disorientation"] },
+  "dxm|nitrous":              { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Dizziness","Disorientation"] },
+  "dxm|ssris":                { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin syndrome risk","Dangerous combo"] },
+  "dxm|tramadol":             { status:"danger",   verdict:"Dangerous - avoid",  tags:["Serotonin syndrome","Seizure risk","Dangerous"] },
+  "2cx|dxm":                  { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Unpredictable","Disorientation"] },
+  "dxm|nbomes":               { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Dissociation","Cardiovascular strain"] },
+
+  // GHB
+  "ghb|lsd":                  { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Sedation","Loss of control"] },
+  "ghb|mescaline":            { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Sedation","Nausea"] },
+  "ghb|methamphetamine":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Competing effects","Cardiovascular strain","Unpredictable"] },
+  "ghb|mushrooms":            { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Sedation","Loss of control"] },
+  "ghb|nitrous":              { status:"unsafe",   verdict:"Unsafe combination", tags:["CNS depression","Loss of consciousness","Respiratory risk"] },
+  "ghb|ssris":                { status:"caution",  verdict:"Use caution",        tags:["Increased sedation","Serotonin caution"] },
+  "ghb|tramadol":             { status:"danger",   verdict:"Dangerous - avoid",  tags:["CNS depression","Breathing slows","Respiratory failure"] },
+  "ghb|maois":                { status:"unsafe",   verdict:"Unsafe combination", tags:["CNS depression","Cardiovascular strain","Unpredictable"] },
+  "2cx|ghb":                  { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Sedation","Loss of control"] },
+  "ghb|nbomes":               { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Unpredictable","Loss of control"] },
+
+  // KETAMINE
+  "ketamine|lsd":             { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Disorientation","Intense experience"] },
+  "ketamine|mdma":            { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Heavy dissociation"] },
+  "ketamine|mescaline":       { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Disorientation","Intense experience"] },
+  "ketamine|methamphetamine": { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Competing effects"] },
+  "ketamine|mushrooms":       { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Disorientation","Intense experience"] },
+  "ketamine|nitrous":         { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Dizziness","Disorientation"] },
+  "ketamine|ssris":           { status:"caution",  verdict:"Use caution",        tags:["Serotonin caution","Sedation"] },
+  "ketamine|tramadol":        { status:"unsafe",   verdict:"Unsafe combination", tags:["CNS depression","Serotonin risk","Sedation"] },
+  "ketamine|maois":           { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Serotonin caution"] },
+  "2cx|ketamine":             { status:"caution",  verdict:"Use caution",        tags:["Heavy dissociation","Disorientation","Intense experience"] },
+  "ketamine|nbomes":          { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Unpredictable","Dissociation"] },
+
+  // LSD
+  "lsd|mescaline":            { status:"caution",  verdict:"Use caution",        tags:["Effects multiply","Very long duration","Intense"] },
+  "lsd|methamphetamine":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Anxiety","Cardiovascular strain","Hard to manage"] },
+  "lsd|nitrous":              { status:"caution",  verdict:"Use caution",        tags:["Intensifies trip","Dizziness","Brief intense peaks"] },
+  "lsd|opioids":              { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Nausea","Sedation risk"] },
+  "lsd|ssris":                { status:"caution",  verdict:"Use caution",        tags:["Blunted effects","Possible trip reduction"] },
+  "lsd|tramadol":             { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Seizure risk"] },
+  "2cx|lsd":                  { status:"caution",  verdict:"Use caution",        tags:["Effects multiply","Very intense","Unpredictable"] },
+  "lsd|nbomes":               { status:"caution",  verdict:"Use caution",        tags:["Very intense","Effects multiply","Cardiovascular strain"] },
+
+  // MDMA
+  "mdma|mescaline":           { status:"caution",  verdict:"Use caution",        tags:["Very intense","Cardiovascular strain","Overheating"] },
+  "mdma|methamphetamine":     { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Neurotoxicity","Overheating"] },
+  "mdma|nitrous":             { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Dizziness","Intense peaks"] },
+  "2cx|mdma":                 { status:"caution",  verdict:"Use caution",        tags:["Very intense","Cardiovascular strain","Overheating"] },
+  "mdma|nbomes":              { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Vasoconstriction","Cardiac risk"] },
+
+  // MESCALINE
+  "mescaline|methamphetamine":{ status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Anxiety","Overheating"] },
+  "mescaline|mushrooms":      { status:"caution",  verdict:"Use caution",        tags:["Effects multiply","Very intense","Long duration"] },
+  "mescaline|nitrous":        { status:"caution",  verdict:"Use caution",        tags:["Intensifies trip","Dizziness","Brief intense peaks"] },
+  "mescaline|opioids":        { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Nausea","Sedation risk"] },
+  "mescaline|ssris":          { status:"caution",  verdict:"Use caution",        tags:["Blunted effects","Variable interaction"] },
+  "mescaline|tramadol":       { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Seizure risk"] },
+  "maois|mescaline":          { status:"caution",  verdict:"Use caution",        tags:["Potentiates mescaline","Much stronger trip","Reduce dose"] },
+  "2cx|mescaline":            { status:"caution",  verdict:"Use caution",        tags:["Effects multiply","Very intense","Long duration"] },
+  "mescaline|nbomes":         { status:"caution",  verdict:"Use caution",        tags:["Very intense","Effects multiply","Cardiovascular strain"] },
+
+  // METHAMPHETAMINE
+  "methamphetamine|mushrooms":{ status:"caution",  verdict:"Use caution",        tags:["Anxiety","Cardiovascular strain","Difficult experience"] },
+  "methamphetamine|nitrous":  { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Dizziness"] },
+  "methamphetamine|ssris":    { status:"caution",  verdict:"Use caution",        tags:["Serotonin risk","Cardiovascular strain"] },
+  "methamphetamine|tramadol": { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Cardiovascular strain","Seizure risk"] },
+  "maois|methamphetamine":    { status:"danger",   verdict:"Dangerous - avoid",  tags:["Blood pressure crisis","Potentially fatal"] },
+  "2cx|methamphetamine":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Overheating","Anxiety"] },
+  "methamphetamine|nbomes":   { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Vasoconstriction","Cardiac risk"] },
+
+  // MUSHROOMS
+  "mushrooms|nitrous":        { status:"caution",  verdict:"Use caution",        tags:["Intensifies trip","Dizziness","Brief intense peaks"] },
+  "mushrooms|opioids":        { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Nausea","Sedation risk"] },
+  "mushrooms|ssris":          { status:"caution",  verdict:"Use caution",        tags:["Blunted effects","Variable interaction"] },
+  "mushrooms|tramadol":       { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Seizure risk"] },
+  "maois|mushrooms":          { status:"caution",  verdict:"Use caution",        tags:["Potentiates mushrooms","Much stronger trip","Reduce dose"] },
+  "2cx|mushrooms":            { status:"caution",  verdict:"Use caution",        tags:["Effects multiply","Very intense","Unpredictable"] },
+  "mushrooms|nbomes":         { status:"caution",  verdict:"Use caution",        tags:["Very intense","Effects multiply","Cardiovascular strain"] },
+
+  // NITROUS
+  "nitrous|ssris":            { status:"caution",  verdict:"Use caution",        tags:["Low interaction","Dizziness"] },
+  "nitrous|tramadol":         { status:"caution",  verdict:"Use caution",        tags:["CNS depression","Dizziness","Sedation"] },
+  "maois|nitrous":            { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular caution","Serotonin caution"] },
+  "2cx|nitrous":              { status:"caution",  verdict:"Use caution",        tags:["Intensifies trip","Dizziness","Brief intense peaks"] },
+  "nbomes|nitrous":           { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Dizziness","Intense peaks"] },
+
+  // OPIOIDS
+  "opioids|ssris":            { status:"caution",  verdict:"Use caution",        tags:["Serotonin risk","Increased sedation"] },
+  "2cx|opioids":              { status:"caution",  verdict:"Use caution",        tags:["Unpredictable","Sedation risk","Nausea"] },
+  "nbomes|opioids":           { status:"caution",  verdict:"Use caution",        tags:["Cardiovascular strain","Unpredictable","Sedation risk"] },
+
+  // SSRIS
+  "2cx|ssris":                { status:"caution",  verdict:"Use caution",        tags:["Serotonin risk","Blunted effects","Variable interaction"] },
+  "nbomes|ssris":             { status:"caution",  verdict:"Use caution",        tags:["Serotonin risk","Variable interaction"] },
+
+  // TRAMADOL
+  "maois|tramadol":           { status:"danger",   verdict:"Dangerous - avoid",  tags:["Serotonin syndrome","Seizure risk","Potentially fatal"] },
+  "2cx|tramadol":             { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Seizure risk"] },
+  "nbomes|tramadol":          { status:"unsafe",   verdict:"Unsafe combination", tags:["Serotonin risk","Cardiovascular strain"] },
+
+  // MAOIS
+  "2cx|maois":                { status:"caution",  verdict:"Use caution",        tags:["Potentiates 2C-x","Much stronger trip","Reduce dose"] },
+  "maois|nbomes":             { status:"unsafe",   verdict:"Unsafe combination", tags:["Cardiovascular strain","Unpredictable","Serotonin risk"] },
+
+  // 2C-x + NBOMes
+  "2cx|nbomes":               { status:"caution",  verdict:"Use caution",        tags:["Effects multiply","Very intense","Cardiovascular strain"] },
+  "amphetamines|cathinones":  { status:"unsafe",   verdict:"Unsafe combination", tags:["Double stimulant","Heart strain","Unpredictable"] },
+  "amphetamines|nbomes":      { status:"unsafe",   verdict:"Unsafe combination", tags:["Vasoconstriction","Heart strain","Cardiovascular risk"] },
+};
+
+// ─────────────────────────────────────────────
+// DOSE DATA
+// Base doses in mg/kg. Adjusted by sex multiplier.
+// female_multiplier: women generally have lower body water %, higher body fat %
+// ─────────────────────────────────────────────
+const doseData = {
+  mdma: {
+    unit: "mg", note: "MDMA doses are less weight-dependent than other substances. Avoid redosing. Effects last 3–5 hrs.",
+    female_multiplier: 0.85,
+    tiers: [
+      { name:"Threshold", base: 0.75 },
+      { name:"Light",     base: 1.0  },
+      { name:"Common",    base: 1.5  },
+      { name:"Strong",    base: 2.0  },
+      { name:"Heavy",     base: 2.5  },
+    ]
+  },
+  alcohol: {
+    unit: "standard drinks", note: "1 standard drink = 14g pure alcohol. Effects depend heavily on food, tolerance, and rate of consumption.",
+    female_multiplier: 0.75,
+    tiers: [
+      { name:"Threshold", base: 0.02 },
+      { name:"Light",     base: 0.05 },
+      { name:"Common",    base: 0.08 },
+      { name:"Strong",    base: 0.12 },
+      { name:"Heavy",     base: 0.18 },
+    ]
+  },
+  cannabis: {
+    unit: "mg THC", note: "Highly tolerance-dependent. Oral (edibles) onset is 45–90 min — wait before redosing.",
+    female_multiplier: 0.9,
+    tiers: [
+      { name:"Threshold", base: 0.025 },
+      { name:"Light",     base: 0.05  },
+      { name:"Common",    base: 0.1   },
+      { name:"Strong",    base: 0.2   },
+      { name:"Heavy",     base: 0.4   },
+    ]
+  },
+  mushrooms: {
+    unit: "g dried", note: "Potency varies widely by species and batch. Set and setting matter significantly.",
+    female_multiplier: 0.9,
+    tiers: [
+      { name:"Threshold", base: 0.025 },
+      { name:"Light",     base: 0.035 },
+      { name:"Common",    base: 0.05  },
+      { name:"Strong",    base: 0.075 },
+      { name:"Heavy",     base: 0.1   },
+    ]
+  },
+  lsd: {
+    unit: "µg", note: "Street LSD dose is highly inconsistent — test strips recommended. Duration 8–12 hrs.",
+    female_multiplier: 0.95,
+    tiers: [
+      { name:"Threshold", base: 0.25  },
+      { name:"Light",     base: 0.75  },
+      { name:"Common",    base: 1.5   },
+      { name:"Strong",    base: 2.5   },
+      { name:"Heavy",     base: 3.5   },
+    ]
+  },
+  cocaine: {
+    unit: "mg", note: "Highly addictive. Nasal route shown. Tolerance builds rapidly. Dangerous in combination with many substances.",
+    female_multiplier: 0.85,
+    tiers: [
+      { name:"Threshold", base: 0.1  },
+      { name:"Light",     base: 0.3  },
+      { name:"Common",    base: 0.7  },
+      { name:"Strong",    base: 1.2  },
+      { name:"Heavy",     base: 2.0  },
+    ]
+  },
+  ketamine: {
+    unit: "mg", note: "Nasal route shown. IV/IM doses are much lower. K-hole risk increases sharply above 'Strong'.",
+    female_multiplier: 0.85,
+    tiers: [
+      { name:"Threshold", base: 0.3  },
+      { name:"Light",     base: 0.75 },
+      { name:"Common",    base: 1.5  },
+      { name:"Strong",    base: 2.5  },
+      { name:"Heavy",     base: 4.0  },
+    ]
+  },
+  amphetamines: {
+    unit: "mg", note: "Oral route shown. Tolerance builds with repeated use. Cardiovascular strain increases at higher doses.",
+    female_multiplier: 0.85,
+    tiers: [
+      { name:"Threshold", base: 0.07 },
+      { name:"Light",     base: 0.15 },
+      { name:"Common",    base: 0.3  },
+      { name:"Strong",    base: 0.5  },
+      { name:"Heavy",     base: 0.75 },
+    ]
+  },
+  ghb: {
+    unit: "g", note: "⚠ GHB has an extremely narrow safety margin. The difference between recreational and overdose doses is small. Never combine with alcohol or CNS depressants.",
+    female_multiplier: 0.8,
+    tiers: [
+      { name:"Threshold", base: 0.015 },
+      { name:"Light",     base: 0.025 },
+      { name:"Common",    base: 0.04  },
+      { name:"Strong",    base: 0.055 },
+      { name:"Heavy",     base: 0.07  },
+    ]
+  },
+  caffeine: {
+    unit: "mg", note: "400mg/day is the commonly cited safe upper limit for healthy adults. Sensitivity varies widely.",
+    female_multiplier: 0.9,
+    tiers: [
+      { name:"Threshold", base: 0.5  },
+      { name:"Light",     base: 1.5  },
+      { name:"Common",    base: 3.0  },
+      { name:"Strong",    base: 5.0  },
+      { name:"Heavy",     base: 7.5  },
+    ]
+  },
+};
+
+// dose substances (subset with data)
+const doseSubstances = [
+  { label:"MDMA",          key:"mdma" },
+  { label:"Alcohol",       key:"alcohol" },
+  { label:"Cannabis",      key:"cannabis" },
+  { label:"Mushrooms",     key:"mushrooms" },
+  { label:"LSD",           key:"lsd" },
+  { label:"Cocaine",       key:"cocaine" },
+  { label:"Ketamine",      key:"ketamine" },
+  { label:"Amphetamines",  key:"amphetamines" },
+  { label:"GHB / GBL",     key:"ghb" },
+  { label:"Caffeine",      key:"caffeine" },
+];
+
+// ─────────────────────────────────────────────
+// POPULATE DROPDOWNS
+// ─────────────────────────────────────────────
+const sub1El = document.getElementById('sub1');
+const sub2El = document.getElementById('sub2');
+const doseSubEl = document.getElementById('dose-sub');
+
+substances.forEach(s => {
+  sub1El.innerHTML += `<option value="${s.key}">${s.label}</option>`;
+  sub2El.innerHTML += `<option value="${s.key}">${s.label}</option>`;
+});
+doseSubstances.forEach(s => {
+  doseSubEl.innerHTML += `<option value="${s.key}">${s.label}</option>`;
+});
+
+// ─────────────────────────────────────────────
+// COMBO CHECKER
+// ─────────────────────────────────────────────
+function getKey(a, b) { return [a, b].sort().join('|'); }
+
+function checkCombo() {
+  const a = sub1El.value, b = sub2El.value;
+  const promptEl = document.getElementById('combo-prompt');
+  const resultEl = document.getElementById('combo-result');
+
+  if (!a || !b) {
+    promptEl.style.display = 'flex';
+    resultEl.style.display = 'none'; resultEl.classList.remove('visible');
+    return;
+  }
+
+  let data;
+  if (a === b) {
+    data = { status:'caution', verdict:'Redosing risk', tags:['Intensity increases','Overdose risk','Give your body time'] };
+  } else {
+    data = combos[getKey(a, b)] || { status:'unknown', verdict:'No data available', tags:['Not well studied','Treat with caution'] };
+  }
+
+  promptEl.style.display = 'none';
+  resultEl.style.display = 'none'; resultEl.classList.remove('visible');
+
+  const aLabel = substances.find(s => s.key === a)?.label || a;
+  const bLabel = substances.find(s => s.key === b)?.label || b;
+  const icons = { safe:'✓', caution:'⚠', unsafe:'✕', danger:'🚨', unknown:'?' };
+
+  document.getElementById('badge').className = `result-badge status-${data.status}`;
+  document.getElementById('badge').textContent = `${icons[data.status]}  ${data.status.toUpperCase()}`;
+  document.getElementById('pair').textContent = a === b ? aLabel : `${aLabel} + ${bLabel}`;
+  document.getElementById('verdict').className = `result-verdict verdict-${data.status}`;
+  document.getElementById('verdict').textContent = data.verdict;
+
+  const tagsEl = document.getElementById('effect-tags');
+  tagsEl.className = `effect-tags tags-${data.status}`;
+  tagsEl.innerHTML = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
+
+  setTimeout(() => {
+    resultEl.style.display = 'flex';
+    requestAnimationFrame(() => resultEl.classList.add('visible'));
+  }, 60);
+}
+
+// ─────────────────────────────────────────────
+// DOSE CALCULATOR
+// ─────────────────────────────────────────────
+let currentUnit = 'kg';
+let currentSex  = 'male';
+
+function setUnit(u) {
+  currentUnit = u;
+  document.getElementById('btn-kg').classList.toggle('active', u === 'kg');
+  document.getElementById('btn-lbs').classList.toggle('active', u === 'lbs');
+  calcDose();
+}
+
+function setSex(s) {
+  currentSex = s;
+  document.getElementById('btn-male').classList.toggle('active', s === 'male');
+  document.getElementById('btn-female').classList.toggle('active', s === 'female');
+  calcDose();
+}
+
+const tierClasses = ['tier-threshold','tier-light','tier-common','tier-strong','tier-heavy'];
+
+function calcDose() {
+  const subKey = doseSubEl.value;
+  const rawWeight = parseFloat(document.getElementById('weight-input').value);
+  const resultEl  = document.getElementById('dose-result');
+
+  if (!subKey || !rawWeight || rawWeight < 20) { resultEl.classList.remove('visible'); return; }
+
+  const weightKg = currentUnit === 'lbs' ? rawWeight * 0.453592 : rawWeight;
+  const data = doseData[subKey];
+  if (!data) { resultEl.classList.remove('visible'); return; }
+
+  const sexMult = currentSex === 'female' ? data.female_multiplier : 1.0;
+
+  const tiersEl = document.getElementById('dose-tiers');
+  tiersEl.innerHTML = data.tiers.map((tier, i) => {
+    let amount = tier.base * weightKg * sexMult;
+    // round sensibly
+    let display;
+    if (amount < 0.1)       display = amount.toFixed(2) + ' ' + data.unit;
+    else if (amount < 10)   display = amount.toFixed(1) + ' ' + data.unit;
+    else                    display = Math.round(amount) + ' ' + data.unit;
+    return `<div class="dose-tier ${tierClasses[i]}">
+      <span class="dose-tier-name">${tier.name}</span>
+      <span class="dose-tier-amount">${display}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('dose-note').textContent = data.note;
+  resultEl.classList.add('visible');
+}
+
+// ─────────────────────────────────────────────
+// PARTICLE BACKGROUND
+// ─────────────────────────────────────────────
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W, H, points = [];
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  points = [];
+  const n = Math.floor(W * H / 12000);
+  for (let i = 0; i < n; i++)
+    points.push({ x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.2, vy:(Math.random()-.5)*.2, r:Math.random()*1.2+.4 });
+}
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  for (const p of points) {
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+  }
+  for(let i=0;i<points.length;i++) for(let j=i+1;j<points.length;j++){
+    const dx=points[i].x-points[j].x, dy=points[i].y-points[j].y, d=Math.sqrt(dx*dx+dy*dy);
+    if(d<110){ ctx.strokeStyle=`rgba(180,200,255,${(1-d/110)*.28})`; ctx.lineWidth=.5; ctx.beginPath(); ctx.moveTo(points[i].x,points[i].y); ctx.lineTo(points[j].x,points[j].y); ctx.stroke(); }
+  }
+  for(const p of points){ ctx.fillStyle='rgba(200,215,255,0.6)'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }
+  requestAnimationFrame(draw);
+}
+window.addEventListener('resize', resize);
+resize(); draw();
+</script>
+</body>
+</html>

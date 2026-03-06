@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will I feel better? · Had too much?</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #080810;
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    canvas { position: fixed; inset: 0; z-index: 0; opacity: 0.3; }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 520px; margin: 0 auto;
+      padding: 40px 28px 180px;
+    }
+
+    .back {
+      color: rgba(255,255,255,0.35); text-decoration: none;
+      font-size: 13px; letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 36px; transition: color 0.2s; width: fit-content;
+    }
+    .back:hover { color: #fff; }
+
+    h1 {
+      font-size: clamp(30px, 9vw, 42px);
+      font-weight: 700; letter-spacing: -0.02em;
+      color: #FF5C8A;
+      text-decoration: underline; text-underline-offset: 6px;
+      text-decoration-thickness: 2px; margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 14px; color: rgba(255,255,255,0.38);
+      font-weight: 300; margin-bottom: 36px; line-height: 1.5;
+    }
+
+    /* ── SECTION ── */
+    .section-label {
+      font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.25);
+      margin-bottom: 12px; margin-top: 36px;
+    }
+    .section-label:first-of-type { margin-top: 0; }
+
+    /* ── CHECKLIST ITEMS ── */
+    .check-item {
+      display: flex; align-items: center; gap: 16px;
+      padding: 18px 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .check-item:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
+    .check-item.checked {
+      background: rgba(255,92,138,0.08);
+      border-color: rgba(255,92,138,0.35);
+    }
+
+    .check-box {
+      width: 26px; height: 26px; flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; font-size: 14px;
+    }
+    .check-item.checked .check-box {
+      background: #FF5C8A;
+      border-color: #FF5C8A;
+    }
+    .check-box-tick { opacity: 0; transition: opacity 0.15s; }
+    .check-item.checked .check-box-tick { opacity: 1; }
+
+    .check-text { flex: 1; }
+    .check-question {
+      font-size: 16px; font-weight: 500;
+      color: rgba(255,255,255,0.9); line-height: 1.3;
+      transition: color 0.2s;
+    }
+    .check-item.checked .check-question { color: rgba(255,255,255,0.5); text-decoration: line-through; text-decoration-color: rgba(255,92,138,0.4); }
+    .check-hint {
+      font-size: 12px; color: rgba(255,255,255,0.3);
+      font-weight: 300; margin-top: 3px; line-height: 1.4;
+    }
+
+    /* ── PROGRESS ── */
+    .progress-wrap {
+      margin-bottom: 32px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .progress-bar-bg {
+      flex: 1; height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; background: #FF5C8A;
+      border-radius: 2px; width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-label {
+      font-size: 12px; color: rgba(255,255,255,0.3);
+      font-weight: 500; white-space: nowrap;
+      min-width: 36px; text-align: right;
+    }
+
+    /* ── RESULT BANNER ── */
+    .result-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 18px 24px 32px;
+      border-top: 1.5px solid;
+      border-radius: 20px 20px 0 0;
+      display: none;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .result-banner.visible { display: block; opacity: 1; transform: translateY(0); }
+    .result-banner.good {
+      background: rgba(80,190,90,0.08);
+      border-color: rgba(80,190,90,0.3);
+    }
+    .result-banner.okay {
+      background: rgba(255,195,45,0.08);
+      border-color: rgba(255,195,45,0.3);
+    }
+    .result-banner.low {
+      background: rgba(255,120,40,0.08);
+      border-color: rgba(255,120,40,0.3);
+    }
+    .result-title {
+      font-size: 20px; font-weight: 700;
+      letter-spacing: -0.01em; margin-bottom: 8px;
+    }
+    .result-banner.good  .result-title { color: #50BE5A; }
+    .result-banner.okay  .result-title { color: #FFC32D; }
+    .result-banner.low   .result-title { color: #FF7828; }
+    .result-body {
+      font-size: 14px; color: rgba(255,255,255,0.5);
+      font-weight: 300; line-height: 1.6;
+    }
+
+    /* ── FOOTER ── */
+    .footer-note {
+      margin-top: 40px; font-size: 11px;
+      color: rgba(255,255,255,0.18); text-align: center; line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="page">
+
+  <a href="index.html" class="back">← back</a>
+
+  <h1>Will I feel better?</h1>
+  <div class="subtitle">Check off what you've done. Your body knows what it needs.</div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-label" id="progress-label">0 / 9</div>
+  </div>
+
+  <!-- BODY -->
+  <div class="section-label">Body basics</div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Had water recently?</div>
+      <div class="check-hint">Sip slowly — 1 cup every 30 min. Don't chug.</div>
+    </div>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Eaten something?</div>
+      <div class="check-hint">Even a few crackers or a banana helps stabilize blood sugar.</div>
+    </div>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Sitting or lying down somewhere safe?</div>
+      <div class="check-hint">Off the dance floor. Somewhere you won't fall.</div>
+    </div>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Cooled down?</div>
+      <div class="check-hint">Overheating is a serious risk. Find shade or a cooler room. Remove layers.</div>
+    </div>
+  </div>
+
+  <!-- MIND -->
+  <div class="section-label">Mind & surroundings</div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Someone you trust nearby?</div>
+      <div class="check-hint">You don't need to explain everything. Just don't be alone right now.</div>
+    </div>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Taken a breath?</div>
+      <div class="check-hint">In for 4 counts, hold for 4, out for 4. Repeat. It works.</div>
+    </div>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Stopped taking more?</div>
+      <div class="check-hint">The best thing you can do now is give your body time to process what's already there.</div>
+    </div>
+  </div>
+
+  <!-- TIME -->
+  <div class="section-label">Time & comfort</div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Know roughly what you took and when?</div>
+      <div class="check-hint">Helps you know when effects should peak and taper. If unsure, assume effects have longer to go.</div>
+    </div>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box"><span class="check-box-tick">✓</span></div>
+    <div class="check-text">
+      <div class="check-question">Feel physically okay — breathing, heart rate?</div>
+      <div class="check-hint">If breathing feels laboured, heart is racing painfully, or you feel chest pain — call 911. That's what they're there for.</div>
+    </div>
+  </div>
+
+  <!-- Result banner -->
+  <div id="result-banner" class="result-banner">
+    <div class="result-title" id="result-title"></div>
+    <div class="result-body" id="result-body"></div>
+  </div>
+
+  <div class="footer-note">
+    Not medical advice · If something feels wrong, trust that feeling<br>
+    BC Crisis Line: <strong>1-800-784-2433</strong> · Emergency: <strong>911</strong>
+  </div>
+
+</div>
+
+<script>
+const items = document.querySelectorAll('.check-item');
+const total = items.length;
+
+function toggle(el) {
+  el.classList.toggle('checked');
+  update();
+}
+
+function update() {
+  const checked = document.querySelectorAll('.check-item.checked').length;
+  const pct = Math.round((checked / total) * 100);
+
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = checked + ' / ' + total;
+
+  const banner = document.getElementById('result-banner');
+  const title  = document.getElementById('result-title');
+  const body   = document.getElementById('result-body');
+
+  if (checked === 0) {
+    banner.style.display = 'none';
+    banner.classList.remove('visible');
+    return;
+  }
+
+  banner.style.display = 'block';
+  requestAnimationFrame(() => banner.classList.add('visible'));
+
+  if (checked >= 8) {
+    banner.className = 'result-banner good visible';
+    title.textContent = "You're doing the right things.";
+    body.textContent  = "You've covered the basics. Your body is working to process things — that takes time. Stay where you are, keep sipping water, and rest. You will feel better.";
+  } else if (checked >= 5) {
+    banner.className = 'result-banner okay visible';
+    title.textContent = "Good start — keep going.";
+    body.textContent  = "You've handled some of the important ones. Work through the rest when you can. The unchecked items are the most likely things still making you feel off.";
+  } else {
+    banner.className = 'result-banner low visible';
+    title.textContent = "Start with the basics.";
+    body.textContent  = "Water, food, and a safe place to sit are the three most important things right now. You don't need to solve everything — just do the next one on the list.";
+  }
+}
+
+// Particle background
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W, H, points = [];
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  points = [];
+  const n = Math.floor(W * H / 14000);
+  for (let i = 0; i < n; i++)
+    points.push({ x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.18, vy:(Math.random()-.5)*.18, r:Math.random()*1.1+.3 });
+}
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  for (const p of points) {
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+  }
+  for(let i=0;i<points.length;i++) for(let j=i+1;j<points.length;j++){
+    const dx=points[i].x-points[j].x, dy=points[i].y-points[j].y, d=Math.sqrt(dx*dx+dy*dy);
+    if(d<110){ ctx.strokeStyle=`rgba(180,200,255,${(1-d/110)*.25})`; ctx.lineWidth=.5; ctx.beginPath(); ctx.moveTo(points[i].x,points[i].y); ctx.lineTo(points[j].x,points[j].y); ctx.stroke(); }
+  }
+  for(const p of points){ ctx.fillStyle='rgba(200,215,255,0.55)'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }
+  requestAnimationFrame(draw);
+}
+window.addEventListener('resize', resize);
+resize(); draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>More help? · Had too much?</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #080810; color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+    }
+    canvas { position: fixed; inset: 0; z-index: 0; opacity: 0.3; }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 520px; margin: 0 auto;
+      padding: 40px 28px 80px;
+    }
+
+    .back {
+      color: rgba(255,255,255,0.35); text-decoration: none;
+      font-size: 13px; letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 36px; transition: color 0.2s; width: fit-content;
+    }
+    .back:hover { color: #fff; }
+
+    h1 {
+      font-size: clamp(30px, 9vw, 42px);
+      font-weight: 700; letter-spacing: -0.02em;
+      color: #4DD9FF;
+      text-decoration: underline; text-underline-offset: 6px;
+      text-decoration-thickness: 2px; margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 14px; color: rgba(255,255,255,0.38);
+      font-weight: 300; margin-bottom: 36px; line-height: 1.5;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.25);
+      margin-bottom: 12px; margin-top: 36px;
+    }
+
+    /* ── CALL CARD ── */
+    .call-card {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.07);
+      border-radius: 14px; margin-bottom: 10px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.2s, background 0.2s;
+      gap: 14px;
+    }
+    .call-card:active { background: rgba(255,255,255,0.1); }
+    .call-card.emergency {
+      background: rgba(215,50,50,0.08);
+      border-color: rgba(215,50,50,0.35);
+    }
+    .call-card.emergency:active { background: rgba(215,50,50,0.18); }
+    .call-name {
+      font-size: 15px; font-weight: 600;
+      color: rgba(255,255,255,0.9); margin-bottom: 2px;
+    }
+    .call-desc {
+      font-size: 12px; color: rgba(255,255,255,0.28); font-weight: 300;
+    }
+    .call-number {
+      font-size: 18px; font-weight: 700;
+      letter-spacing: -0.01em; white-space: nowrap; flex-shrink: 0;
+    }
+    .call-card.emergency .call-number { color: #D73232; }
+    .call-card .call-number { color: #4DD9FF; }
+
+    /* ── ALERT BOX ── */
+    .alert {
+      padding: 16px 18px; border-radius: 14px;
+      border: 1.5px solid; margin-bottom: 10px;
+    }
+    .alert.red    { background: rgba(215,50,50,0.08);  border-color: rgba(215,50,50,0.3);  }
+    .alert.yellow { background: rgba(255,195,45,0.08); border-color: rgba(255,195,45,0.3); }
+    .alert.green  { background: rgba(80,190,90,0.08);  border-color: rgba(80,190,90,0.3);  }
+    .alert.blue   { background: rgba(77,217,255,0.06); border-color: rgba(77,217,255,0.2); }
+
+    .alert-title {
+      font-size: 14px; font-weight: 700; margin-bottom: 8px;
+    }
+    .alert.red    .alert-title { color: #D73232; }
+    .alert.yellow .alert-title { color: #FFC32D; }
+    .alert.green  .alert-title { color: #50BE5A; }
+    .alert.blue   .alert-title { color: #4DD9FF; }
+
+    .alert ul {
+      list-style: none; display: flex; flex-direction: column; gap: 4px;
+    }
+    .alert ul li {
+      font-size: 14px; font-weight: 400;
+      color: rgba(255,255,255,0.65); line-height: 1.4;
+      display: flex; gap: 8px; align-items: baseline;
+    }
+    .alert ul li::before { content: '·'; flex-shrink: 0; opacity: 0.4; }
+
+    /* ── TWO COL ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .col-card { padding: 20px 18px; border-radius: 14px; border: 1.5px solid; }
+    .col-card.green { background: rgba(80,190,90,0.07);  border-color: rgba(80,190,90,0.25); }
+    .col-card.red   { background: rgba(215,50,50,0.07);  border-color: rgba(215,50,50,0.25); }
+    .col-header {
+      font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+      font-weight: 700; margin-bottom: 12px;
+    }
+    .col-card.green .col-header { color: #50BE5A; }
+    .col-card.red   .col-header { color: #D73232; }
+    .col-card ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .col-card ul li {
+      font-size: 15px; color: rgba(255,255,255,0.7);
+      font-weight: 400; line-height: 1.5;
+      display: flex; gap: 6px;
+    }
+    .col-card ul li::before { content: '·'; flex-shrink: 0; opacity: 0.35; }
+
+    .footer-note {
+      margin-top: 40px; font-size: 11px;
+      color: rgba(255,255,255,0.18); text-align: center; line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="page">
+
+  <a href="index.html" class="back">← back</a>
+  <h1>More help?</h1>
+  <div class="subtitle">Tap any number to call.</div>
+
+  <!-- COPS VS EMTS -->
+  <div class="two-col" style="margin-bottom:28px;">
+    <div class="col-card green">
+      <div class="col-header">Tell EMTs</div>
+      <ul>
+        <li>What was taken</li>
+        <li>How much</li>
+        <li>When</li>
+        <li>Any other substances</li>
+        <li>Any medications</li>
+      </ul>
+    </div>
+    <div class="col-card red">
+      <div class="col-header">Tell cops</div>
+      <ul>
+        <li>Nothing</li>
+        <li>"I want a lawyer"</li>
+        <li>Stay calm</li>
+        <li>Don't resist</li>
+        <li>Charter protects your right to silence</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- EMERGENCY -->
+  <div class="section-label">Emergency</div>
+  <a href="tel:911" class="call-card emergency">
+    <div>
+      <div class="call-name">Emergency Services</div>
+      <div class="call-desc">Not breathing · unconscious · chest pain · seizure</div>
+    </div>
+    <div class="call-number">911</div>
+  </a>
+
+  <div class="alert yellow">
+    <div class="alert-title">Good Samaritan Law (BC)</div>
+    <ul>
+      <li>Calling 911 for an overdose protects you from possession charges</li>
+      <li>Stays with the person until help arrives</li>
+    </ul>
+  </div>
+
+  <!-- CRISIS LINES -->
+  <div class="section-label">Crisis lines · 24/7</div>
+
+  <a href="tel:18007842433" class="call-card">
+    <div>
+      <div class="call-name">BC Crisis Line</div>
+      <div class="call-desc">Mental health · distress · substances</div>
+    </div>
+    <div class="call-number">1-800-784-2433</div>
+  </a>
+
+  <a href="tel:988" class="call-card">
+    <div>
+      <div class="call-name">Crisis Lifeline</div>
+      <div class="call-desc">Call or text · national</div>
+    </div>
+    <div class="call-number">988</div>
+  </a>
+
+  <a href="tel:18006631441" class="call-card">
+    <div>
+      <div class="call-name">BC Alcohol & Drug Info</div>
+      <div class="call-desc">Non-judgmental info & referrals</div>
+    </div>
+    <div class="call-number">1-800-663-1441</div>
+  </a>
+
+
+
+  <!-- RECOVERY POSITION -->
+  <div class="alert blue">
+    <div class="alert-title">Someone unconscious but breathing?</div>
+    <ul>
+      <li>Roll them onto their side</li>
+      <li>Bend top knee forward so they can't roll back</li>
+      <li>Tilt head back slightly — keeps airway open</li>
+      <li>Stay with them</li>
+    </ul>
+  </div>
+
+  <!-- NALOXONE -->
+  <div class="section-label">Naloxone (Narcan)</div>
+  <div class="alert green">
+    <div class="alert-title">Free at any BC pharmacy — no prescription</div>
+    <ul>
+      <li>Reverses opioid overdose in minutes</li>
+      <li>Can't hurt someone — if no opioids, nothing happens</li>
+      <li>Also at harm reduction sites & festival first aid</li>
+    </ul>
+  </div>
+
+  <!-- VANCOUVER -->
+  <div class="section-label">Vancouver harm reduction</div>
+  <div class="alert blue">
+    <div class="alert-title">Local resources</div>
+    <ul>
+      <li>Insite (supervised use) · 139 E Hastings · 24/7</li>
+      <li>Drug checking · bccdc.ca</li>
+      <li>SOLID peer support · 604-216-1339</li>
+    </ul>
+  </div>
+
+  <div class="footer-note">
+    Not medical advice · When in doubt, call 911
+  </div>
+
+</div>
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W, H, pts = [];
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  pts = [];
+  for (let i = 0; i < Math.floor(W*H/14000); i++)
+    pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.1+.3});
+}
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  for (const p of pts){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;}
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<110){ctx.strokeStyle=`rgba(180,200,255,${(1-d/110)*.25})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.stroke();}
+  }
+  for(const p of pts){ctx.fillStyle='rgba(200,215,255,0.55)';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}
+  requestAnimationFrame(draw);
+}
+window.addEventListener('resize',resize);
+resize();draw();
+</script>
+</body>
+</html>
